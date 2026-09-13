@@ -280,9 +280,14 @@ button{font-family:inherit;}
 @media (prefers-reduced-motion: reduce){ .editor-content-inner{ animation:none; } }
 @media (max-width:700px){
   .form-panel{ flex-direction:column; }
-  .editor-rail{ flex-direction:row; width:auto; overflow-x:auto; border-right:none; border-bottom:1px solid var(--line-soft); padding:8px; gap:4px; }
-  .rail-tab{ flex:none; width:auto; border-left:none; border-bottom:3px solid transparent; border-radius:10px 10px 0 0; white-space:nowrap; }
-  .rail-tab.active{ border-bottom-color:var(--spark); }
+  /* Was a single-row horizontal-scroll strip (overflow-x:auto) — on a phone that hid most
+     section tabs off-screen with no visual hint there was more to scroll to, so people
+     often never found "Skills"/"Languages"/etc below the fold of the strip. flex-wrap
+     lets every tab wrap onto as many rows as it needs so the whole section list is visible
+     and reachable with a single glance, no sideways scrolling required. */
+  .editor-rail{ flex-direction:row; flex-wrap:wrap; width:auto; max-width:none; overflow-x:visible; border-right:none; border-bottom:1px solid var(--line-soft); padding:8px; gap:4px; }
+  .rail-tab{ flex:none; width:auto; border-left:none; border-bottom:3px solid transparent; border-radius:10px; white-space:nowrap; padding:8px 10px; }
+  .rail-tab.active{ border-bottom-color:var(--spark); background:var(--surface-2); }
   .editor-content{ padding:16px 14px 20px; }
 }
 

@@ -260,14 +260,14 @@ button{font-family:inherit;}
    empty — width:max-content lets the column hug whatever the widest label actually
    needs (capped so a very long label still can't eat the content pane), and nowrap on
    the label itself is what makes that natural width calculation possible. */
-.editor-rail{ flex:none; width:max-content; max-width:190px; padding:14px 8px; display:flex; flex-direction:column; gap:2px; border-right:1px solid var(--line-soft); }
-.rail-tab{ display:flex; align-items:center; gap:8px; width:100%; background:none; border:none; border-left:3px solid transparent; padding:10px 10px 10px 9px; border-radius:0 10px 10px 0; cursor:pointer; text-align:left; color:var(--ink-soft); transition:background .15s, color .15s, border-color .15s; }
+.editor-rail{ flex:none; width:max-content; max-width:210px; padding:14px 8px; display:flex; flex-direction:column; gap:2px; border-right:1px solid var(--line-soft); }
+.rail-tab{ display:flex; align-items:center; gap:8px; width:100%; background:none; border:none; border-left:3px solid transparent; padding:11px 10px 11px 9px; border-radius:0 10px 10px 0; cursor:pointer; text-align:left; color:var(--ink-soft); transition:background .15s, color .15s, border-color .15s; }
 .rail-tab:hover{ background:var(--surface-2); color:var(--ink); }
 .rail-tab.active{ background:var(--surface-2); color:var(--ink); border-left-color:var(--spark); }
-.rail-num{ font-family:var(--font-mono); font-size:.64rem; font-weight:700; color:var(--ink-faint); letter-spacing:.02em; flex:none; }
+.rail-num{ font-family:var(--font-mono); font-size:.7rem; font-weight:700; color:var(--ink-faint); letter-spacing:.02em; flex:none; }
 .rail-tab.active .rail-num{ color:var(--spark); }
-.rail-title{ font-weight:700; font-size:.78rem; flex:1; letter-spacing:-.005em; line-height:1.2; white-space:nowrap; }
-.rail-count{ font-size:.65rem; color:var(--ink-faint); font-family:var(--font-mono); flex:none; }
+.rail-title{ font-weight:700; font-size:.87rem; flex:1; letter-spacing:-.005em; line-height:1.2; white-space:nowrap; }
+.rail-count{ font-size:.7rem; color:var(--ink-faint); font-family:var(--font-mono); flex:none; }
 .editor-content{ flex:1; min-width:0; padding:18px 16px 22px; }
 .editor-content-inner{ display:flex; flex-direction:column; gap:14px; animation:editorFadeIn .2s ease; }
 @keyframes editorFadeIn{ from{ opacity:0; transform:translateY(4px);} }
@@ -2631,6 +2631,32 @@ function buildPagedPreview(){
     if(pageCount>1){ note.hidden=false; note.textContent = 'This CV runs to '+pageCount+' pages — consider trimming older roles or bullet detail if you want it on one page.'; }
     else { note.hidden=true; }
   }
+}
+
+/* #cvPage's rendered height can change *after* buildPagedPreview() already sliced it into
+   pages — most commonly because a web font (Fraunces/Figtree/etc., loaded async via Google
+   Fonts) finishes downloading and swaps in after the first paint, shifting line heights/
+   widths just enough that a page-break offset computed against the fallback font no longer
+   lines up with the real layout. When that happens, an entry (e.g. a certification's title
+   + issuer line) that was safely whole under the fallback font can end up with its stale
+   break landing mid-entry, visually slicing it across the page boundary in the on-screen
+   preview even though nothing about the CV's content actually changed. Watching #cvPage's
+   own box for size changes (debounced, and skipping the very first observation — which just
+   reports the size renderCV() itself already accounted for) catches that and any other
+   future cause of a late, silent reflow, and re-slices once things have settled. */
+if(typeof ResizeObserver !== 'undefined'){
+  let cvPageResizeKnownH = null;
+  let cvPageResizeTimer = null;
+  const cvPageResizeObserver = new ResizeObserver((entries)=>{
+    const h = entries[0].contentRect.height;
+    if(cvPageResizeKnownH === null){ cvPageResizeKnownH = h; return; }
+    if(Math.abs(h - cvPageResizeKnownH) < 1) return;
+    cvPageResizeKnownH = h;
+    clearTimeout(cvPageResizeTimer);
+    cvPageResizeTimer = setTimeout(()=>{ buildPagedPreview(); fitPreview(); }, 100);
+  });
+  const cvPageEl = document.getElementById('cvPage');
+  if(cvPageEl) cvPageResizeObserver.observe(cvPageEl);
 }
 
 /* Scrolls the on-screen preview to whichever part of the CV corresponds to the form

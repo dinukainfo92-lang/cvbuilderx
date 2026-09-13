@@ -487,9 +487,9 @@ button{font-family:inherit;}
    section never starts jammed against the very top edge of a new sheet, and the reader
    always knows whose CV they're looking at when pages get separated (e.g. printed loose). */
 .a4-cont-header{ height:64px; flex:none; box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:0 44px; background:#fff; border-bottom:2px solid var(--a,#2563EB); }
-.a4-cont-header .cont-id{ display:flex; align-items:baseline; gap:10px; min-width:0; }
-.a4-cont-header .cont-name{ font-weight:700; font-size:14.5px; color:#20242C; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.a4-cont-header .cont-role{ font-size:12px; color:#5B6270; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.a4-cont-header .cont-id{ display:flex; align-items:baseline; gap:9px; min-width:0; opacity:.68; }
+.a4-cont-header .cont-name{ font-weight:700; font-size:12.5px; color:#20242C; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.a4-cont-header .cont-role{ font-size:10.5px; color:#5B6270; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .a4-cont-header .cont-page{ font-size:10px; font-weight:700; font-family:var(--font-mono); color:var(--a,#2563EB); letter-spacing:.02em; flex:none; }
 .page-count-note{ text-align:center; font-size:.76rem; color:var(--ink-faint); margin-top:10px; font-weight:600; }
 
@@ -2586,6 +2586,12 @@ function buildPagedPreview(){
   let prev = 0;
   const accent = cvPage.style.getPropertyValue('--a') || '#2563EB';
   const bodyFont = cvPage.style.getPropertyValue('--font-b') || "'Inter',sans-serif";
+  // The person's NAME everywhere else in the CV (.cv-name) is set in the template's heading
+  // font (--font-h — often a distinct display/serif face like Fraunces, deliberately
+  // different from the body font), so the continuation header's repeated name has to use
+  // that same heading font to actually match rather than just being "a font" — using the
+  // body font there (as this used to) reads as visibly off-brand against the rest of the CV.
+  const headFont = cvPage.style.getPropertyValue('--font-h') || "'Inter',sans-serif";
   breaks.forEach((brk, i)=>{
     const sliceH = Math.min(PAGE_H, brk - prev);
     const sheet = document.createElement('div');
@@ -2602,6 +2608,11 @@ function buildPagedPreview(){
       const name = state.data.personal.fullName || 'Your Name';
       const role = state.data.personal.jobTitle || '';
       header.innerHTML = `<span class="cont-id"><span class="cont-name">${esc(name)}</span>${role?`<span class="cont-role">${esc(role)}</span>`:''}</span>${pageCount>1?`<span class="cont-page">Page ${i+1} of ${pageCount}</span>`:''}`;
+      // Set via the DOM property (not interpolated into the HTML string above) so a font
+      // stack containing quotes/commas — the normal shape of a --font-h value — never has
+      // to be attribute-escaped by hand.
+      const contNameEl = header.querySelector('.cont-name');
+      if(contNameEl) contNameEl.style.fontFamily = headFont;
       sheet.appendChild(header);
     }
 

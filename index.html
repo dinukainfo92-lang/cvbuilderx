@@ -242,7 +242,13 @@ button{font-family:inherit;}
 
 /* ============ MAIN GRID ============ */
 .workspace{ display:grid; grid-template-columns: minmax(0,560px) minmax(0,1fr); gap:18px; margin-top:18px; align-items:start; }
-@media (max-width:980px){ .workspace{ grid-template-columns:1fr; } }
+/* Below 980px the grid collapses to a single 1fr column, but a grid item's default
+   automatic min-width is its content's min-content size, not the track size — so once
+   the panels stack, their own wide descendants (long labels, side-by-side fields, etc.)
+   were forcing each panel back out to its desktop min-content width and overflowing the
+   narrow viewport horizontally. min-width:0 here makes the panels actually respect the
+   collapsed 1fr track instead of their content's natural minimum. */
+@media (max-width:980px){ .workspace{ grid-template-columns:1fr; } .workspace > .panel{ min-width:0; } }
 
 .panel{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); }
 .form-panel{ padding:0; max-height:calc(100vh - 110px); overflow:auto; position:sticky; top:70px; display:flex; align-items:stretch; scroll-behavior:smooth; }
@@ -447,6 +453,10 @@ button{font-family:inherit;}
 .size-label{ font-size:.72rem; font-weight:700; color:var(--ink-soft); }
 .step-btn{ width:20px; height:20px; border-radius:50%; border:1px solid var(--line); background:var(--surface); cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:800; line-height:1; padding:0; color:var(--ink); font-size:.9rem; }
 .step-btn:hover{ background:var(--spark-soft); border-color:var(--spark); }
+/* The 20px circle is fine for a mouse pointer, but a real thumb needs closer to the
+   ~44px platforms recommend — bump the hit area on touch-sized screens without changing
+   the compact desktop look. */
+@media (max-width:700px){ .step-btn{ width:34px; height:34px; font-size:1rem; } }
 .step-val{ min-width:34px; text-align:center; font-size:.76rem; font-weight:700; color:var(--ink); font-family:var(--font-mono); }
 
 .preview-stage{ background:var(--surface-2); border-radius:var(--radius-md); padding:28px 14px; display:flex; justify-content:center; overflow:auto; position:relative; }
@@ -2852,9 +2862,31 @@ function wireLetterColorPopover(){
       toast('Color set to '+getPalette(sw.dataset.palette).name);
     });
   });
-  btn.addEventListener('click', e=>{ e.stopPropagation(); pop.hidden = !pop.hidden; });
+  // Same viewport-clamped fixed positioning as wireFontPicker's positionPop() — plain
+  // `position:absolute; left:0` (relative to the toolbar button) ran the palette pop off
+  // the right edge of the screen on narrow/mobile viewports whenever its trigger button
+  // wasn't near the left edge.
+  function positionPop(){
+    const r = btn.getBoundingClientRect();
+    pop.style.position = 'fixed';
+    let top = r.bottom + 8;
+    const popH = pop.offsetHeight || 200;
+    if(top + popH > window.innerHeight - 12 && r.top - popH - 8 > 0) top = r.top - popH - 8;
+    pop.style.top = Math.max(8, top) + 'px';
+    let left = r.left;
+    const maxLeft = window.innerWidth - pop.offsetWidth - 12;
+    if(left > maxLeft) left = Math.max(12, maxLeft);
+    pop.style.left = left + 'px';
+  }
+  btn.addEventListener('click', e=>{
+    e.stopPropagation();
+    const wasHidden = pop.hidden;
+    pop.hidden = !pop.hidden;
+    if(wasHidden){ positionPop(); requestAnimationFrame(positionPop); }
+  });
   pop.addEventListener('click', e=>e.stopPropagation());
   document.addEventListener('click', ()=>{ pop.hidden = true; });
+  window.addEventListener('resize', ()=>{ if(!pop.hidden) positionPop(); });
 }
 // Live hover/focus font preview for the Cover Letter's own font popover — same idea as the
 // CV toolbar's previewFontLive/restoreActiveFont above, just targeting #letterPage's CSS
@@ -4874,9 +4906,31 @@ function wireColorPopover(){
     renderCV();
     toast('Reset to palette color');
   });
-  btn.addEventListener('click', (e)=>{ e.stopPropagation(); pop.hidden = !pop.hidden; });
+  // Same viewport-clamped fixed positioning as wireFontPicker's positionPop() — plain
+  // `position:absolute; left:0` (relative to the toolbar button) ran the palette pop off
+  // the right edge of the screen on narrow/mobile viewports whenever its trigger button
+  // wasn't near the left edge.
+  function positionPop(){
+    const r = btn.getBoundingClientRect();
+    pop.style.position = 'fixed';
+    let top = r.bottom + 8;
+    const popH = pop.offsetHeight || 200;
+    if(top + popH > window.innerHeight - 12 && r.top - popH - 8 > 0) top = r.top - popH - 8;
+    pop.style.top = Math.max(8, top) + 'px';
+    let left = r.left;
+    const maxLeft = window.innerWidth - pop.offsetWidth - 12;
+    if(left > maxLeft) left = Math.max(12, maxLeft);
+    pop.style.left = left + 'px';
+  }
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const wasHidden = pop.hidden;
+    pop.hidden = !pop.hidden;
+    if(wasHidden){ positionPop(); requestAnimationFrame(positionPop); }
+  });
   pop.addEventListener('click', e=>e.stopPropagation());
   document.addEventListener('click', ()=>{ pop.hidden = true; });
+  window.addEventListener('resize', ()=>{ if(!pop.hidden) positionPop(); });
 }
 
 function wireSizeSteppers(){

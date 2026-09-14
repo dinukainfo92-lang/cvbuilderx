@@ -2675,6 +2675,16 @@ if(typeof ResizeObserver !== 'undefined'){
   let cvPageResizeTimer = null;
   const cvPageResizeObserver = new ResizeObserver((entries)=>{
     const h = entries[0].contentRect.height;
+    // Printing/downloading a PDF switches to print CSS, which sets #cvPage to
+    // display:none (the print output reads the already-built .a4-sheet chain directly —
+    // see buildPagedPreview's own comment). That collapses this observed height to 0,
+    // which is NOT a real content reflow, but this observer used to treat it as one: the
+    // debounced rebuild below would call buildPagedPreview() while #cvPage.scrollHeight
+    // read 0, which clamps its page-height math down to a single page and silently
+    // dropped every page after the first from the print/PDF output. A real CV's rendered
+    // height is never actually near zero, so treat that collapse as "hidden, not resized"
+    // and skip it entirely.
+    if(h < 10) return;
     if(cvPageResizeKnownH === null){ cvPageResizeKnownH = h; return; }
     if(Math.abs(h - cvPageResizeKnownH) < 1) return;
     cvPageResizeKnownH = h;

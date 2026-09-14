@@ -288,6 +288,10 @@ button{font-family:inherit;}
   .editor-rail{ flex-direction:row; flex-wrap:wrap; width:auto; max-width:none; overflow-x:visible; border-right:none; border-bottom:1px solid var(--line-soft); padding:8px; gap:4px; }
   .rail-tab{ flex:none; width:auto; border-left:none; border-bottom:3px solid transparent; border-radius:10px; white-space:nowrap; padding:8px 10px; }
   .rail-tab.active{ border-bottom-color:var(--spark); background:var(--surface-2); }
+  /* The "01/02/03…" index only earned its keep as a scan aid down a single vertical
+     column of tabs — wrapped across several rows on mobile it's just visual noise next to
+     the label, so drop it there and let the title stand on its own. */
+  .rail-num{ display:none; }
   .editor-content{ padding:16px 14px 20px; }
 }
 
@@ -2712,6 +2716,14 @@ function refSelector(ref){
   return `[data-cv-ref="${CSS.escape(ref)}"]`;
 }
 function scrollPreviewToRef(ref){
+  // This jump only makes sense on the desktop two-column layout, where .form-panel is
+  // sticky (position:sticky) so scrolling the page to bring the PREVIEW into view leaves
+  // the form itself pinned in place. Below the same 980px breakpoint where that sticky
+  // positioning turns off (.workspace stacks to one column, form above preview), calling
+  // window.scrollTo here yanks the whole page — and the form fields someone just tapped
+  // into — away to wherever the preview happens to sit further down, which reads as the
+  // page randomly scrolling out from under them. Skip it there entirely.
+  if(window.innerWidth <= 980) return;
   const cvPage = document.getElementById('cvPage');
   const sheets = document.querySelectorAll('#pagedPreview .a4-sheet');
   if(!cvPage || !sheets.length) return;

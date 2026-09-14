@@ -3178,7 +3178,7 @@ function cancelHideLetterZoom(){
 }
 function scheduleHideLetterZoom(){
   cancelHideLetterZoom();
-  letterZoomState.hideTimer = setTimeout(hideLetterZoomPreview, 140);
+  letterZoomState.hideTimer = setTimeout(hideLetterZoomPreview, 500);
 }
 function hideLetterZoomPreview(remove){
   cancelHideLetterZoom();
@@ -4641,7 +4641,7 @@ function cancelHideZoom(){
 // away, centered on screen — without the preview vanishing en route.
 function scheduleHideZoom(){
   cancelHideZoom();
-  zoomState.hideTimer = setTimeout(hideZoomPreview, 140);
+  zoomState.hideTimer = setTimeout(hideZoomPreview, 500);
 }
 function hideZoomPreview(remove){
   cancelHideZoom();

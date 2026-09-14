@@ -3063,8 +3063,18 @@ function ensureLetterZoomOverlay(){
     closeModal();
     toast('Applied '+getLetterLayout(t.layoutId).name+' — '+getPalette(t.paletteId).name);
   });
-  zo.addEventListener('mouseenter', cancelHideLetterZoom);
-  zo.addEventListener('mouseleave', scheduleHideLetterZoom);
+  // These were only bound on `zo` (the overlay wrapper) itself, but .tmpl-zoom-overlay is
+  // pointer-events:none — only the card and the two nav buttons re-enable pointer-events —
+  // so the wrapper can never actually receive its own mouseenter/mouseleave (pointer-events:
+  // none removes it from hit-testing entirely, ancestor included), and moving the mouse from
+  // the small grid card onto the arrows/card let the pending hide fire anyway, closing the
+  // popup the moment the cursor reached it. Binding directly to the three elements that are
+  // actually hoverable is what the wrapper-level listener below was trying (and failing) to do.
+  const letterZoomHoverables = [zo.querySelector('.tmpl-zoom-prev'), zo.querySelector('.tmpl-zoom-next'), zo.querySelector('.tmpl-zoom-card')];
+  letterZoomHoverables.forEach(el=>{
+    el.addEventListener('mouseenter', cancelHideLetterZoom);
+    el.addEventListener('mouseleave', scheduleHideLetterZoom);
+  });
   return zo;
 }
 /* Shared by both the CV and Cover Letter zoom popups: sizes the popup card to fill as
@@ -4553,8 +4563,15 @@ function ensureZoomOverlay(){
   // centered over the whole screen, well away from that card — must not read as "leaving"
   // the preview; only actually leaving the overlay area (or its source card) schedules the
   // hide, and re-entering either one cancels a pending hide.
-  zo.addEventListener('mouseenter', cancelHideZoom);
-  zo.addEventListener('mouseleave', scheduleHideZoom);
+  // NOTE: .tmpl-zoom-overlay itself is pointer-events:none — only .tmpl-zoom-card and the two
+  // .tmpl-zoom-nav buttons re-enable pointer-events — so the wrapper (zo) can never receive its
+  // own mouseenter/mouseleave (pointer-events:none removes an element from hit-testing entirely,
+  // ancestor included). Bind directly to the three elements that are actually hoverable instead.
+  const zoomHoverables = [zo.querySelector('.tmpl-zoom-prev'), zo.querySelector('.tmpl-zoom-next'), zo.querySelector('.tmpl-zoom-card')];
+  zoomHoverables.forEach(el=>{
+    el.addEventListener('mouseenter', cancelHideZoom);
+    el.addEventListener('mouseleave', scheduleHideZoom);
+  });
   return zo;
 }
 function paintZoomPreview(idx){
